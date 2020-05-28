@@ -2,7 +2,8 @@ use crypto_hash::{Algorithm, hex_digest};
 
 #[derive(Debug)]
 pub enum EncryptErr{
-    XorError
+    XorError,
+    
 }
 
 pub fn hash_xor_key(msg: &mut Vec<u8>, key: &mut Vec<u8>) -> Result<Vec<u8>, EncryptErr> {
