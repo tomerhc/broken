@@ -1,7 +1,15 @@
 mod hasher;
+mod feistel;
 use hasher::hash_xor_key;
 
-fn main() {
+fn main(){
+    let text = String::from("hello world");
+    let mut bytes = text.into_bytes();
+    feistel::swap(&mut bytes);
+    println!("{:?}", String::from_utf8(bytes).unwrap())
+}
+
+fn real_main() {
     let text = String::from("hello world! blablablabla  sdchbdcjshbdc  992chbcbcbcbcbbchhdh ");
     let mut bytes = text.into_bytes();
     let key:[u8;30] = [4;30];
