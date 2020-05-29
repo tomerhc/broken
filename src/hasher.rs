@@ -3,7 +3,7 @@ use crypto_hash::{Algorithm, hex_digest};
 #[derive(Debug)]
 pub enum EncryptErr{
     XorError,
-    
+
 }
 
 pub fn hash_xor_key(msg: &mut Vec<u8>, key: &mut Vec<u8>) -> Result<Vec<u8>, EncryptErr> {
@@ -16,21 +16,27 @@ pub fn hash_xor_key(msg: &mut Vec<u8>, key: &mut Vec<u8>) -> Result<Vec<u8>, Enc
     if msg.len() < key.len() {
         pad(msg, key.len());
     }
-    let xored = xor_key(msg, key)?;
-    Ok(hex_digest(Algorithm::SHA256, xored).into_bytes())
+    xor_key(msg, key)?;
+    Ok(hex_digest(Algorithm::SHA256, msg).into_bytes())
 }
 
-fn pad<'a>(v: &'a mut Vec<u8>, l: usize) -> &'a Vec<u8> {
+pub fn pad(v: &mut Vec<u8>, l: usize) {
     for _ in 0..l-v.len() {
         v.push(b'\x00');
     }
-    v
 }
 
-fn xor_key<'a>(v: &'a mut Vec<u8>, k: &'a mut Vec<u8>) -> Result<&'a Vec<u8>, EncryptErr> {
+pub fn pad_key(v: &mut Vec<u8>, l: usize) {
+    while v.len() < l{
+        v.append(&mut v.clone());
+    }
+    v.truncate(l)
+}
+
+fn xor_key(v: &mut Vec<u8>, k: &mut Vec<u8>) -> Result<(), EncryptErr> {
     if v.len() != k.len(){
         return Err(EncryptErr::XorError);
     }
     v.iter_mut().zip(k.iter()).for_each(|(x1, x2)| *x1 ^= *x2);
-    Ok(v)
+    Ok(())
 }

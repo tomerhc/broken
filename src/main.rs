@@ -3,10 +3,18 @@ mod feistel;
 use hasher::hash_xor_key;
 
 fn main(){
-    let text = String::from("hello world");
-    let mut bytes = text.into_bytes();
-    feistel::swap(&mut bytes);
-    println!("{:?}", String::from_utf8(bytes).unwrap())
+    let text = String::from("hello world and bla bla bla ");
+    let key = String::from("secret");
+    let msg_bytes = text.into_bytes();
+    let key_bytes = key.into_bytes();
+    let cypher = feistel::encrypt(msg_bytes, key_bytes.clone(), 1).unwrap();
+    println!("{:?}\n{}", cypher, cypher.len());
+    println!("{:?}", String::from_utf8(cypher.clone()));
+
+    let dec = feistel::decrypt(cypher, key_bytes, 1).unwrap();
+    println!("{:?}\n{}", dec, dec.len());
+    println!("{:?}", String::from_utf8(dec));
+
 }
 
 fn real_main() {
