@@ -9,7 +9,6 @@ fn main(){
     let key_bytes = key.into_bytes();
     let cypher = feistel::encrypt(msg_bytes, key_bytes.clone(), 5).unwrap();
     println!("cypher text: {:?}\n\n", String::from_utf8(cypher.clone()).unwrap());
-
     let dec = feistel::decrypt(cypher, key_bytes, 5).unwrap();
     let dec_str = String::from_utf8(dec).unwrap();
     let dec_str = dec_str.trim_matches('\x00');
