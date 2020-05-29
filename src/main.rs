@@ -8,11 +8,7 @@ fn main(){
     let msg_bytes = text.into_bytes();
     let key_bytes = key.into_bytes();
     let cypher = feistel::encrypt(msg_bytes, key_bytes.clone(), 1).unwrap();
-    println!("{:?}\n{}", cypher, cypher.len());
-    println!("{:?}", String::from_utf8(cypher.clone()));
-
     let dec = feistel::decrypt(cypher, key_bytes, 1).unwrap();
-    println!("{:?}\n{}", dec, dec.len());
     println!("{:?}", String::from_utf8(dec));
 
 }

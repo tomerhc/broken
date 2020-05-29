@@ -18,6 +18,8 @@ pub fn decrypt(mut msg: Vec<u8>,  mut key: Vec<u8>, rounds: i32) -> Result<Vec<u
     //assertions
     pad_key(&mut key, 64);
     swap(&mut msg);
+    println!("msg {:?}\n{}", msg, msg.len());
+    println!("key {:?}\n{}", key, key.len());
     let mut final_key = calc_final_key(&key, rounds);
     for _ in 0..rounds {
         fiestel_round(&mut msg, &final_key)?;
@@ -31,7 +33,7 @@ pub fn fiestel_round<'a >(msg: &'a mut Vec<u8>, k: &'a Vec<u8>) -> Result<(), En
     assert!(msg.len() == 128, "msg should be 2X256bits / 128 bytes");
     assert!(k.len() == 64, "key should be 256bits / 64 bytes");
     
-    let mut right = msg.split_off(msg.len()/2);
+    let right = msg.split_off(msg.len()/2);
     println!("right {:?}\n{}", right, right.len());
     println!("left {:?}\n{}", msg, msg.len());
     let mut f_of_right = f_func(&mut right.clone(), k)?;
@@ -44,10 +46,6 @@ pub fn fiestel_round<'a >(msg: &'a mut Vec<u8>, k: &'a Vec<u8>) -> Result<(), En
 
 fn f_func(v: &mut Vec<u8>, k: &Vec<u8>) -> Result<Vec<u8>, EncryptErr>{
     hash_xor_key(v, &mut k.clone())
-}
-
-fn break_msg(msg: &mut Vec<u8>) -> (Vec<u8>, Vec<u8>){
-    (Vec::new(), Vec::new())
 }
 
 fn inc_key(k: &mut Vec<u8>){
@@ -66,8 +64,6 @@ fn calc_final_key(k: &Vec<u8>, rounds: i32) -> Vec<u8>{
     }
     final_key
 }
-
-
 
 pub fn swap(msg: &mut Vec<u8>){
     let mut s = msg.split_off(msg.len()/2);
