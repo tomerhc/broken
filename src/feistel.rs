@@ -25,7 +25,7 @@ pub fn decrypt(mut msg: Vec<u8>,  mut key: Vec<u8>, rounds: i32) -> Result<Vec<u
 }
 
 
-pub fn fiestel_round<'a >(msg: &'a mut Vec<u8>, k: &'a Vec<u8>) -> Result<(), EncryptErr> {
+pub fn fiestel_round(msg: &mut Vec<u8>, k: & Vec<u8>) -> Result<(), EncryptErr> {
     assert!(msg.len() == 128, "msg should be 2X256bits / 128 bytes");
     assert!(k.len() == 64, "key should be 256bits / 64 bytes");
     
