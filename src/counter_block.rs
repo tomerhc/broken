@@ -62,6 +62,20 @@ pub fn decrypt(b: Blocks, key: Vec<u8>) -> Result<Vec<u8>, String>{
     Ok(msg)
 }
 
+
+pub fn decrypt_block(b: Blocks, block_num: usize){
+
+}
+
+pub fn parallel_encryption(){
+
+}
+
+pub fn parallel_decryption(){
+
+}
+
+
 fn nonce_gen(nonce_len: usize) -> Vec<u8> {
     let v: Vec<u8> = (0..nonce_len).map(|_|{
         let r: u8 = rand::thread_rng().gen();

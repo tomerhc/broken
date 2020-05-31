@@ -18,5 +18,4 @@ fn main(){
     let dec_str = String::from_utf8(dec).unwrap();
     let dec_str = dec_str.trim_matches('\x00');
     println!("decrypted => {:?}", dec_str)
-
 }
