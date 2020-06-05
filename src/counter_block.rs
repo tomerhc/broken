@@ -63,17 +63,17 @@ pub fn decrypt(b: Blocks, key: Vec<u8>) -> Result<Vec<u8>, String>{
 }
 
 
-pub fn decrypt_block(b: Blocks, block_num: usize){
+// pub fn decrypt_block(b: Blocks, block_num: usize){
 
-}
+// }
 
-pub fn parallel_encryption(){
+// pub fn parallel_encryption(){
 
-}
+// }
 
-pub fn parallel_decryption(){
+// pub fn parallel_decryption(){
 
-}
+// }
 
 
 fn nonce_gen(nonce_len: usize) -> Vec<u8> {
