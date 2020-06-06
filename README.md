@@ -1,5 +1,5 @@
 ## BROKEN
-a file encryptor using COUNTER mode of operation
+a file encryptor using CTR mode of operation
 
 *features:*
 - parallel encryption / decryption (using a password)
