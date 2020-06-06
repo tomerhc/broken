@@ -1,7 +1,7 @@
 use std::fs::{File, metadata};
 use std::io::prelude::*;
 use std::mem;
-use byteorder::{LittleEndian, WriteBytesExt, ReadBytesExt};
+use byteorder::{LittleEndian, WriteBytesExt};
 
 use crate::counter_block;
 
@@ -12,6 +12,12 @@ pub fn read_clear_file(path: &str) -> std::io::Result<Vec<u8>>{
     let mut buff = vec![0u8;meta.len() as usize];
     f.read(&mut buff)?;
     Ok(buff)
+}
+
+pub fn write_clear_file(path: &str, mut buff: Vec<u8>) -> std::io::Result<()>{
+    let mut f = File::create(path)?;
+    f.write_all(&mut buff)?;
+    Ok(())
 }
 
 pub fn read_enc_file(path: &str) -> std::io::Result<counter_block::Blocks>{
@@ -38,7 +44,6 @@ pub fn read_enc_file(path: &str) -> std::io::Result<counter_block::Blocks>{
         f.read(&mut buff)?;
         blocks.push(buff);
     }
-    
     Ok(
         counter_block::Blocks {
             nonce: nonce,
@@ -55,13 +60,17 @@ pub fn write_blocks(mut cypher: counter_block::Blocks, path: &str) -> std::io::R
     let block_size = cypher.blocks[0].len();
     let byte_size = cypher.blocks.len() * block_size;
     let nonce_size = cypher.nonce.len();
+    
     let mut serial_rounds_num = [0u8;mem::size_of::<i32>()];
-    serial_rounds_num.as_mut().write_i32::<LittleEndian>(cypher.f_rounds).expect("could not write num rounds");
     let mut serial_block_size = [0u8;mem::size_of::<i32>()];
-    serial_block_size.as_mut().write_i32::<LittleEndian>(block_size as i32).expect("could not write block size");
     let mut serial_nonce_size = [0u8;mem::size_of::<i32>()];
+    
+    serial_rounds_num.as_mut().write_i32::<LittleEndian>(cypher.f_rounds).expect("could not write num rounds");
+    serial_block_size.as_mut().write_i32::<LittleEndian>(block_size as i32).expect("could not write block size");
     serial_nonce_size.as_mut().write_i32::<LittleEndian>(nonce_size as i32).expect("could not write nonce size");
+    
     let mut write_buff: Vec<u8> = Vec::with_capacity(nonce_size + byte_size + serial_rounds_num.len());
+    
     write_buff.append(&mut serial_block_size.to_vec());
     write_buff.append(&mut serial_nonce_size.to_vec());
     write_buff.append(&mut serial_rounds_num.to_vec());
