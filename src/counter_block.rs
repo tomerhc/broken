@@ -1,5 +1,6 @@
 extern crate byteorder;
 use byteorder::{LittleEndian, WriteBytesExt};
+use rayon::prelude::*;
 use std::mem;
 use rand::Rng;
 use crate::feistel;
@@ -9,6 +10,7 @@ pub struct Blocks {
     pub f_rounds: i32,
     pub blocks: Vec<Vec<u8>>
 }
+
 
 pub fn encrypt(mut msg: Vec<u8>, key: Vec<u8>, block_size: usize, f_rounds: i32) -> Result<Blocks, String>{
     //assertions
@@ -63,13 +65,52 @@ pub fn decrypt(b: Blocks, key: Vec<u8>) -> Result<Vec<u8>, String>{
 }
 
 
+pub fn par_encrypt(mut msg: Vec<u8>, key: Vec<u8>, block_size: usize, f_rounds: i32) -> Result<Blocks, String>{
+    //assertions
+    // number of block nust be less then MAX::i64 because it can overflow the counter
+    
+    let nonce_len: usize = 128 - mem::size_of::<i64>(); // nonce needs to be 128 bytes long beacuse of the use of SHA256, including the length of the counter
+    let nonce: Vec<u8> = nonce_gen(nonce_len);
+    let mut counter: i64 = 0;
+
+    let mut all_batches: Vec<(Vec<u8>, Vec<u8>)> = Vec::new();
+    for chunk in msg.chunks_mut(block_size){
+        let nonce_counter: Vec<u8> = get_nonce_counter(&nonce, counter).unwrap();
+        let chunk_vec: Vec<u8> = chunk.to_vec();
+        all_batches.push((nonce_counter, chunk_vec));
+        counter += 1;
+    }
+    let all_results: Vec<Vec<u8>> = all_batches.into_par_iter()
+    .map(
+        |(nonce_counter, chunk_vec)|
+        encrypt_par_block(nonce_counter, chunk_vec, key.clone(), f_rounds, block_size).unwrap()
+    )
+    .collect();
+    Ok(Blocks {
+        nonce: nonce,
+        f_rounds: f_rounds,
+        blocks: all_results
+    })
+}
+
+fn encrypt_par_block(nonce: Vec<u8>, mut chunk: Vec<u8>, key: Vec<u8>, f_rounds: i32, block_size: usize) -> Result<Vec<u8>, String>{
+    let cypher = feistel::encrypt(nonce, key, f_rounds);
+    match cypher {
+        Ok(_) => (),
+        Err(e) => return Err(format!("{:?}", e))
+    }
+    let mut cypher = cypher.unwrap();
+    pad_cypher(&mut cypher, block_size);
+    pad_chunk(&mut chunk, block_size);
+    chunk.iter_mut().zip(cypher.iter()).for_each(|(x1, x2)| *x1 ^= *x2);
+    Ok(chunk)
+}
+
+
 // pub fn decrypt_block(b: Blocks, block_num: usize){
 
 // }
 
-// pub fn parallel_encryption(){
-
-// }
 
 // pub fn parallel_decryption(){
 
