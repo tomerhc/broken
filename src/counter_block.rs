@@ -43,6 +43,31 @@ pub fn encrypt(mut msg: Vec<u8>, key: Vec<u8>, block_size: usize, f_rounds: i32)
     })
 }
 
+
+pub fn par_decrypt(b: Blocks, key: Vec<u8>) -> Result<Vec<u8>, String>{
+    let (nonce, blocks) = (b.nonce, b.blocks);
+   // let blocks = b.blocks;
+    let block_len = blocks[0].len();
+    let f_rounds = b.f_rounds;
+    let mut all_batches: Vec<(Vec<u8>, Vec<u8>)> = Vec::new();
+    let mut msg: Vec<u8> = Vec::with_capacity(blocks.len() * blocks[0].len());
+    for (counter, block) in blocks.into_iter().enumerate(){
+        let nonce_counter: Vec<u8> = get_nonce_counter(&nonce, counter as i64)?;
+        all_batches.push((nonce_counter, block));
+    }
+
+    let mut decrypted_blocks: Vec<Vec<u8>> = all_batches.into_par_iter()
+    .map(
+        |(nonce_counter, block)|
+        encrypt_par_block(nonce_counter, block, key.clone(), f_rounds, block_len).unwrap()
+    )
+    .collect();
+    for item in decrypted_blocks.iter_mut(){
+        msg.append(item);
+    }
+    Ok(msg)
+}
+
 pub fn decrypt(b: Blocks, key: Vec<u8>) -> Result<Vec<u8>, String>{
     let nonce = b.nonce;
     let mut blocks = b.blocks;
