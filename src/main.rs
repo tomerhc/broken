@@ -13,9 +13,11 @@ fn main(){
     let f2 = f.clone();
     let pass = key.into_bytes();
     let pass2 = pass.clone();
+    
     let now = Instant::now();
     let reg_res = counter_block::encrypt(f, pass, 1024, 15).unwrap();
     println!("regular time took => {:?}", now.elapsed().as_millis());
+    
     let now = Instant::now();
     let par_res = counter_block::par_encrypt(f2, pass2, 1024, 15).unwrap();
     println!("parallel time took => {:?}", now.elapsed().as_millis());

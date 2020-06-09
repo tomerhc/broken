@@ -10,13 +10,13 @@ pub fn read_clear_file(path: &str) -> std::io::Result<Vec<u8>>{
     let mut f = File::open(path)?;
     let meta = metadata(path)?;
     let mut buff = vec![0u8;meta.len() as usize];
-    f.read(&mut buff)?;
+    f.read_exact(&mut buff)?;
     Ok(buff)
 }
 
-pub fn write_clear_file(path: &str, mut buff: Vec<u8>) -> std::io::Result<()>{
+pub fn write_clear_file(path: &str, buff: Vec<u8>) -> std::io::Result<()>{
     let mut f = File::create(path)?;
-    f.write_all(&mut buff)?;
+    f.write_all(&buff)?;
     Ok(())
 }
 
@@ -27,28 +27,28 @@ pub fn read_enc_file(path: &str) -> std::io::Result<counter_block::Blocks>{
     let mut nonce_size_buff = [0u8;mem::size_of::<i32>()];
     let mut rounds_num_buff = [0u8;mem::size_of::<i32>()];
 
-    f.read(&mut block_size_buff)?;
-    f.read(&mut nonce_size_buff)?;
-    f.read(&mut rounds_num_buff)?;
+    f.read_exact(&mut block_size_buff)?;
+    f.read_exact(&mut nonce_size_buff)?;
+    f.read_exact(&mut rounds_num_buff)?;
 
     let block_size: i32 = i32::from_le_bytes(block_size_buff);
     let nonce_size: i32 = i32::from_le_bytes(nonce_size_buff);
-    let rounds_num: i32 = i32::from_le_bytes(rounds_num_buff);
+    let f_rounds: i32 = i32::from_le_bytes(rounds_num_buff);
     let rest_of_file = f.metadata().unwrap().len() as usize - (3 * mem::size_of::<i32>()) - nonce_size as usize;
     let mut nonce = vec![0u8; nonce_size as usize];
-    f.read(&mut nonce)?;
+    f.read_exact(&mut nonce)?;
 
     let mut blocks: Vec<Vec<u8>> = Vec::with_capacity(rest_of_file / block_size as usize);
     for _ in 0..blocks.capacity(){
         let mut buff = vec![0u8; block_size as usize];
-        f.read(&mut buff)?;
+        f.read_exact(&mut buff)?;
         blocks.push(buff);
     }
     Ok(
         counter_block::Blocks {
-            nonce: nonce,
-            f_rounds: rounds_num,
-            blocks: blocks
+            nonce,
+            f_rounds,
+            blocks
         }
     )
 }
@@ -79,7 +79,7 @@ pub fn write_blocks(mut cypher: counter_block::Blocks, path: &str) -> std::io::R
         write_buff.append(b)
     }
     let mut enc_file = File::create(path)?;
-    enc_file.write_all(&mut write_buff)?;
+    enc_file.write_all(&write_buff)?;
     Ok(())
 }
 

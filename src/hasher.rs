@@ -7,8 +7,8 @@ pub enum EncryptErr{
 }
 
 pub fn hash_xor_key(msg: &mut Vec<u8>, key: &mut Vec<u8>) -> Result<Vec<u8>, EncryptErr> {
-    assert!(msg.len() > 0, "msg vector is of length 0!");
-    assert!(key.len() > 0, "key vector is of length 0!");
+    assert!(!msg.is_empty(), "msg vector is of empty!");
+    assert!(!key.is_empty(), "key vector is of empty!");
     while msg.len() > key.len(){
         let mut key_copy = key.clone();
         key.append(&mut key_copy);

@@ -2,15 +2,14 @@ use std::process::exit;
 
 pub fn parse_args(mut argv: Vec<String>) -> Result<Vec<(String, String)>, ()>{
     argv.remove(0);
-    if argv.len() == 0 || argv.len() % 2 != 0 {
+    if argv.is_empty() || argv.len() % 2 != 0 {
         print_usege();
     }
 
     let mut flags: Vec<(usize, &str)> = Vec::new();
     for (index, arg) in argv.iter().enumerate() {
-        match arg.chars().next() {
-            Some('-') => flags.push((index, arg)),
-            _ => ()
+        if let Some('-') = arg.chars().next() {
+            flags.push((index, arg))
         }
     }
 
@@ -41,14 +40,11 @@ pub fn parse_args(mut argv: Vec<String>) -> Result<Vec<(String, String)>, ()>{
         }
     }
 
-    if !final_args.iter().any(|(a, _)| a == "key"){
-        print_usege();
-        Err(())
-    } else if final_args.iter().any(|(a, _)| a == "encrypt") && final_args.iter().any(|(a, _)| a == "decrypt") {
+    if (!final_args.iter().any(|(a, _)| a == "key")) || (final_args.iter().any(|(a, _)| a == "encrypt") && final_args.iter().any(|(a, _)| a == "decrypt")){
         print_usege();
         Err(())
     } else if final_args.iter().any(|(a, _)| a == "encrypt") || final_args.iter().any(|(a, _)| a == "decrypt"){
-        return Ok(final_args);
+        Ok(final_args)
     } else {
         print_usege();
         Err(())

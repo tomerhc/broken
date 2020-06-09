@@ -37,9 +37,9 @@ pub fn encrypt(mut msg: Vec<u8>, key: Vec<u8>, block_size: usize, f_rounds: i32)
         counter += 1;
     }
     Ok(Blocks {
-        nonce: nonce,
-        f_rounds: f_rounds,
-        blocks: blocks
+        nonce,
+        f_rounds,
+        blocks
     })
 }
 
@@ -71,25 +71,23 @@ pub fn par_encrypt(mut msg: Vec<u8>, key: Vec<u8>, block_size: usize, f_rounds: 
     
     let nonce_len: usize = 128 - mem::size_of::<i64>(); // nonce needs to be 128 bytes long beacuse of the use of SHA256, including the length of the counter
     let nonce: Vec<u8> = nonce_gen(nonce_len);
-    let mut counter: i64 = 0;
 
     let mut all_batches: Vec<(Vec<u8>, Vec<u8>)> = Vec::new();
-    for chunk in msg.chunks_mut(block_size){
-        let nonce_counter: Vec<u8> = get_nonce_counter(&nonce, counter).unwrap();
+    for (counter, chunk) in msg.chunks_mut(block_size).enumerate(){
+        let nonce_counter: Vec<u8> = get_nonce_counter(&nonce, counter as i64).unwrap();
         let chunk_vec: Vec<u8> = chunk.to_vec();
         all_batches.push((nonce_counter, chunk_vec));
-        counter += 1;
     }
-    let all_results: Vec<Vec<u8>> = all_batches.into_par_iter()
+    let blocks: Vec<Vec<u8>> = all_batches.into_par_iter()
     .map(
         |(nonce_counter, chunk_vec)|
         encrypt_par_block(nonce_counter, chunk_vec, key.clone(), f_rounds, block_size).unwrap()
     )
     .collect();
     Ok(Blocks {
-        nonce: nonce,
-        f_rounds: f_rounds,
-        blocks: all_results
+        nonce,
+        f_rounds,
+        blocks
     })
 }
 
