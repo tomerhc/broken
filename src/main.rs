@@ -1,11 +1,14 @@
+//!
+#![warn(missing_debug_implementations, missing_docs)]
+
 use std::env::args;
-//use std::time::Instant;
 mod hasher;
 mod feistel;
 mod counter_block;
 mod file_mng;
 mod parse_args;
 
+// TODO: error handling
 fn main() -> std::io::Result<()> {
     let parsed_args = parse_args::parse_args(args().collect()).unwrap();
     let mut enc_dec: bool = true;
@@ -43,4 +46,38 @@ fn main() -> std::io::Result<()> {
 
     Ok(())
 }
- 
+
+mod tests {
+    #[test]
+    fn _test(){}
+    // hasher functions 
+    // => hash_xor_key with different lengths
+    // 
+    // fiestel
+    // => encryption with pre comuted values
+    // => description with pre comuted values
+    // => encryption and decryption
+    // => encryption with short msg, long key
+    // => decryption with wrong key
+    //
+    // counter blocks
+    // => par_encryption with pre comuted values
+    // => par_description with pre comuted values
+    // => decryption by block num 
+    // => encryptiong twice with same key and msg and check that 
+    //    result is not the same
+    //
+    // parse args 
+    // => missing file
+    // => missing password
+    // => both -e and -d
+    // => two of the same flag
+    //
+    // file_mng
+    // => non-existent file
+    // => invalid file name
+    // => empty file
+    //
+    // integration
+    // => encrypting and decrypting an image file and check original == new. 
+}

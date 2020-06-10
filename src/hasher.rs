@@ -3,9 +3,16 @@ use crypto_hash::{Algorithm, hex_digest};
 #[derive(Debug)]
 pub enum EncryptErr{
     XorError,
-
 }
 
+/// pads the key and msg to the same length, xors them and then preformes a SHA256 hash on the result.
+/// # Examples
+/// ```rust
+/// let msg = String::from("hello world!").into_bytes();
+/// let key = String::from("super_secret").into_bytes();
+/// let res = hash_xor_key(&mut msg, &key).unwrap();
+
+/// ```
 pub fn hash_xor_key(msg: &mut Vec<u8>, key: &mut Vec<u8>) -> Result<Vec<u8>, EncryptErr> {
     assert!(!msg.is_empty(), "msg vector is of empty!");
     assert!(!key.is_empty(), "key vector is of empty!");

@@ -1,5 +1,6 @@
 use std::process::exit;
 
+// TODO: remove -p
 pub fn parse_args(mut argv: Vec<String>) -> Result<Vec<(String, String)>, ()>{
     argv.remove(0);
     if argv.is_empty() || argv.len() % 2 != 0 {

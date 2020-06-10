@@ -1,7 +1,7 @@
 use crate::hasher::{EncryptErr, hash_xor_key, pad, pad_key};
 
 pub fn encrypt(mut msg: Vec<u8>, mut key: Vec<u8>, rounds: i32) -> Result<Vec<u8>, EncryptErr>{
-    //assertions
+    // TODO: assertions
     pad(&mut msg, 128);
     pad_key(&mut key, 64);
     for _ in 0..rounds {
@@ -12,7 +12,7 @@ pub fn encrypt(mut msg: Vec<u8>, mut key: Vec<u8>, rounds: i32) -> Result<Vec<u8
 }
 
 pub fn decrypt(mut msg: Vec<u8>,  mut key: Vec<u8>, rounds: i32) -> Result<Vec<u8>, EncryptErr>{
-    //assertions
+    // TODO: assertions
     pad_key(&mut key, 64);
     swap(&mut msg);
     let mut final_key = calc_final_key(&key, rounds-1);
@@ -45,11 +45,14 @@ fn inc_key(k: &mut Vec<u8>){
     k.iter_mut().for_each(|x| *x += 1);
 }
 
+// TODO: remove function 
 fn dec_key(k: &mut Vec<u8>){
     k.iter_mut().for_each(|x| *x -= 1);
 
 }
 
+
+// TODO: remove function 
 fn calc_final_key(k: &[u8], rounds: i32) -> Vec<u8>{
     let mut final_key = k.to_owned();
     for _ in 0..rounds{
@@ -58,6 +61,8 @@ fn calc_final_key(k: &[u8], rounds: i32) -> Vec<u8>{
     final_key
 }
 
+
+// TODO: remove function 
 pub fn swap(msg: &mut Vec<u8>){
     let mut s = msg.split_off(msg.len()/2);
     s.append(msg);

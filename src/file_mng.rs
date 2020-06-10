@@ -21,7 +21,7 @@ pub fn write_clear_file(path: &str, buff: Vec<u8>) -> std::io::Result<()>{
 }
 
 pub fn read_enc_file(path: &str) -> std::io::Result<counter_block::Blocks>{
-    // assertions
+    // TODO: assertions
     let mut f = File::open(path).unwrap();
     let mut block_size_buff = [0u8;mem::size_of::<i32>()];
     let mut nonce_size_buff = [0u8;mem::size_of::<i32>()];
@@ -55,7 +55,7 @@ pub fn read_enc_file(path: &str) -> std::io::Result<counter_block::Blocks>{
 
 
 pub fn write_blocks(mut cypher: counter_block::Blocks, path: &str) -> std::io::Result<()>{
-    //assertions
+    // TODO: assertions
 
     let block_size = cypher.blocks[0].len();
     let byte_size = cypher.blocks.len() * block_size;
@@ -82,5 +82,9 @@ pub fn write_blocks(mut cypher: counter_block::Blocks, path: &str) -> std::io::R
     enc_file.write_all(&write_buff)?;
     Ok(())
 }
+
+// TODO: load head / tail of file
+// TODO: batch / directory reads and writes
+
 
 
