@@ -1,4 +1,5 @@
-use crate::hasher::{EncryptErr, hash_xor_key, pad, pad_key};
+use crate::hasher::{hash_xor_key, pad, pad_key};
+use crate::error::{EncryptErr, DecryptErr};
 
 pub fn encrypt(mut msg: Vec<u8>, mut key: Vec<u8>, rounds: i32) -> Result<Vec<u8>, EncryptErr>{
     // TODO: assertions
@@ -11,7 +12,8 @@ pub fn encrypt(mut msg: Vec<u8>, mut key: Vec<u8>, rounds: i32) -> Result<Vec<u8
     Ok(msg)
 }
 
-pub fn decrypt(mut msg: Vec<u8>,  mut key: Vec<u8>, rounds: i32) -> Result<Vec<u8>, EncryptErr>{
+// TODO: remove finction
+pub fn decrypt(mut msg: Vec<u8>,  mut key: Vec<u8>, rounds: i32) -> Result<Vec<u8>, DecryptErr>{
     // TODO: assertions
     pad_key(&mut key, 64);
     swap(&mut msg);

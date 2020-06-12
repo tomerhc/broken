@@ -1,9 +1,5 @@
 use crypto_hash::{Algorithm, hex_digest};
-
-#[derive(Debug)]
-pub enum EncryptErr{
-    XorError,
-}
+use crate::error::EncryptErr;
 
 /// pads the key and msg to the same length, xors them and then preformes a SHA256 hash on the result.
 /// # Examples
@@ -42,7 +38,7 @@ pub fn pad_key(v: &mut Vec<u8>, l: usize) {
 
 fn xor_key(v: &mut Vec<u8>, k: &mut Vec<u8>) -> Result<(), EncryptErr> {
     if v.len() != k.len(){
-        return Err(EncryptErr::XorError);
+        return Err(EncryptErr::HashErr);
     }
     v.iter_mut().zip(k.iter()).for_each(|(x1, x2)| *x1 ^= *x2);
     Ok(())

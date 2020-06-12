@@ -1,10 +1,9 @@
-use std::process::exit;
 
-// TODO: remove -p
 pub fn parse_args(mut argv: Vec<String>) -> Result<Vec<(String, String)>, ()>{
     argv.remove(0);
     if argv.is_empty() || argv.len() % 2 != 0 {
         print_usege();
+        return Err(())
     }
 
     let mut flags: Vec<(usize, &str)> = Vec::new();
@@ -19,6 +18,7 @@ pub fn parse_args(mut argv: Vec<String>) -> Result<Vec<(String, String)>, ()>{
     for (index, flag) in flags.into_iter(){
         if used_flags.iter().any(|a| a == &flag){
             print_usege();
+            return Err(())
         }
         match flag {
             "-e" => {
@@ -33,11 +33,10 @@ pub fn parse_args(mut argv: Vec<String>) -> Result<Vec<(String, String)>, ()>{
                         final_args.push((String::from("key") ,String::from(&argv[index+1])));
                         used_flags.push(flag)
                     },
-            "-p" => {
-                        final_args.push((String::from("parallel") ,String::from(&argv[index+1])));
-                        used_flags.push(flag)
-                    },
-            _ => print_usege(), 
+            _ => {
+                    print_usege();
+                    return Err(())
+                }, 
         }
     }
 
@@ -54,11 +53,9 @@ pub fn parse_args(mut argv: Vec<String>) -> Result<Vec<(String, String)>, ()>{
 
 fn print_usege(){
     println!("usege:
-            broken <flag> <path> <-k> <key> [options]
+            broken <flag> <path> <-k> <key>
             flags:
             -e => encrypt
-            -d => decrypt\n
-            options:
-            -p [n cores] => parallel procesing on n cores");
-    exit(0);
+            -d => decrypt
+            ");
 }

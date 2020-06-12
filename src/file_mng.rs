@@ -2,7 +2,7 @@ use std::fs::{File, metadata};
 use std::io::prelude::*;
 use std::mem;
 use byteorder::{LittleEndian, WriteBytesExt};
-
+use crate::error::*;
 use crate::counter_block;
 
 
@@ -14,13 +14,13 @@ pub fn read_clear_file(path: &str) -> std::io::Result<Vec<u8>>{
     Ok(buff)
 }
 
-pub fn write_clear_file(path: &str, buff: Vec<u8>) -> std::io::Result<()>{
+pub fn write_clear_file(path: &str, buff: Vec<u8>) -> Result<(), DecryptErr>{
     let mut f = File::create(path)?;
     f.write_all(&buff)?;
     Ok(())
 }
 
-pub fn read_enc_file(path: &str) -> std::io::Result<counter_block::Blocks>{
+pub fn read_enc_file(path: &str) -> Result<counter_block::Blocks, DecryptErr>{
     // TODO: assertions
     let mut f = File::open(path).unwrap();
     let mut block_size_buff = [0u8;mem::size_of::<i32>()];
@@ -54,7 +54,7 @@ pub fn read_enc_file(path: &str) -> std::io::Result<counter_block::Blocks>{
 }
 
 
-pub fn write_blocks(mut cypher: counter_block::Blocks, path: &str) -> std::io::Result<()>{
+pub fn write_blocks(mut cypher: counter_block::Blocks, path: &str) -> Result<(), EncryptErr>{
     // TODO: assertions
 
     let block_size = cypher.blocks[0].len();
