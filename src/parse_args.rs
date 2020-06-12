@@ -1,4 +1,18 @@
 
+///parse the vector of arguments passed from main into a vector of tuples that look like:
+/// (<type of argument>, <value>)
+/// 
+/// types are:
+/// - "-e" for encryption
+/// - "-d" for decryption
+/// - "-k" for the key
+/// 
+/// # Errors
+/// will print a usege message if:
+/// - amount of arguments is wrong
+/// - a double argument
+/// - unrecognized argument
+/// and then returns an Err(()), which will cause main to exit. 
 pub fn parse_args(mut argv: Vec<String>) -> Result<Vec<(String, String)>, ()>{
     argv.remove(0);
     if argv.is_empty() || argv.len() % 2 != 0 {

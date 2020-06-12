@@ -5,8 +5,10 @@ use byteorder::{LittleEndian, WriteBytesExt};
 use crate::error::*;
 use crate::counter_block;
 
-
-pub fn read_clear_file(path: &str) -> std::io::Result<Vec<u8>>{
+///Used for reading a file for encryption
+/// # Errors
+/// Returns error if file not found or ther is a problem in reading it.
+pub fn read_clear_file(path: &str) -> Result<Vec<u8>, EncryptErr>{
     let mut f = File::open(path)?;
     let meta = metadata(path)?;
     let mut buff = vec![0u8;meta.len() as usize];
@@ -14,12 +16,20 @@ pub fn read_clear_file(path: &str) -> std::io::Result<Vec<u8>>{
     Ok(buff)
 }
 
+///Used for writing a file after it has been decrypted. 
+/// # Errors
+/// returns an error if there is a problem creating the file or a problem writing to it. 
 pub fn write_clear_file(path: &str, buff: Vec<u8>) -> Result<(), DecryptErr>{
     let mut f = File::create(path)?;
     f.write_all(&buff)?;
     Ok(())
 }
 
+///Used for reading a file for encryption.
+/// The function parses the file costume header created by the encryption and returns a <counter_block::Blocks> struct.
+/// notice: encrypted files will probably have a different file extention then their unencrypted version!
+/// # Errors
+/// Returns error if file not found or there is a problem in reading it.
 pub fn read_enc_file(path: &str) -> Result<counter_block::Blocks, DecryptErr>{
     // TODO: assertions
     let mut f = File::open(path).unwrap();
@@ -53,7 +63,10 @@ pub fn read_enc_file(path: &str) -> Result<counter_block::Blocks, DecryptErr>{
     )
 }
 
-
+///Used for writing a <counter_block::Blocks> struct to a file. 
+/// Converts the nonce, block size and other params to a header and appends the raw bytes to it. 
+/// # Errors
+/// returns an error if there is a problem creating the file or a problem writing to it. 
 pub fn write_blocks(mut cypher: counter_block::Blocks, path: &str) -> Result<(), EncryptErr>{
     // TODO: assertions
 

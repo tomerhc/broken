@@ -29,6 +29,7 @@ pub fn pad(v: &mut Vec<u8>, l: usize) {
     }
 }
 
+///pads key by multiplying the bytes until longer then l, and then truncateing to size l
 pub fn pad_key(v: &mut Vec<u8>, l: usize) {
     while v.len() < l{
         v.append(&mut v.clone());
