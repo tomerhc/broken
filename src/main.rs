@@ -192,18 +192,9 @@ mod tests {
     }
     
     // file_mng
+    // => non existent file
     // => invalid file name
     // => empty file
-    
-    #[test]
-    fn non_existant_clear_file() {
-        let path = String::from("d:/non/existant/file.txt");
-        let f = file_mng::read_clear_file(&path);
-        match f {
-            Ok(_) => assert!(1==0),
-            Err(e) => assert_eq!(format!("{}", e), "The system cannot find the path specified. (os error 3)")
-        }   
-    }
     //
     // integration
     // => encrypting and decrypting an image file and check original == new. 

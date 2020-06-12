@@ -19,18 +19,18 @@ pub fn encrypt(mut msg: Vec<u8>, mut key: Vec<u8>, rounds: i32) -> Result<Vec<u8
 }
 
 
-// pub fn decrypt(mut msg: Vec<u8>,  mut key: Vec<u8>, rounds: i32) -> Result<Vec<u8>, DecryptErr>{
-//     // TODO: assertions
-//     pad_key(&mut key, 64);
-//     swap(&mut msg);
-//     let mut final_key = calc_final_key(&key, rounds-1);
-//     for _ in 0..rounds {
-//         fiestel_round(&mut msg, &final_key)?;
-//         dec_key(&mut final_key);
-//     }
-//     swap(&mut msg);
-//     Ok(msg)
-// }
+pub fn decrypt(mut msg: Vec<u8>,  mut key: Vec<u8>, rounds: i32) -> Result<Vec<u8>, DecryptErr>{
+    // TODO: assertions
+    pad_key(&mut key, 64);
+    swap(&mut msg);
+    let mut final_key = calc_final_key(&key, rounds-1);
+    for _ in 0..rounds {
+        fiestel_round(&mut msg, &final_key)?;
+        dec_key(&mut final_key);
+    }
+    swap(&mut msg);
+    Ok(msg)
+}
 
 /// preform a single fiestel round:
 /// 
@@ -63,24 +63,24 @@ fn inc_key(k: &mut Vec<u8>){
     k.iter_mut().for_each(|x| *x += 1);
 }
 
-// fn dec_key(k: &mut Vec<u8>){
-//     k.iter_mut().for_each(|x| *x -= 1);
+fn dec_key(k: &mut Vec<u8>){
+    k.iter_mut().for_each(|x| *x -= 1);
 
-// }
-
-
-// fn calc_final_key(k: &[u8], rounds: i32) -> Vec<u8>{
-//     let mut final_key = k.to_owned();
-//     for _ in 0..rounds{
-//         inc_key(&mut final_key)
-//     }
-//     final_key
-// }
+}
 
 
-// pub fn swap(msg: &mut Vec<u8>){
-//     let mut s = msg.split_off(msg.len()/2);
-//     s.append(msg);
-//     *msg = s;
-//}
+fn calc_final_key(k: &[u8], rounds: i32) -> Vec<u8>{
+    let mut final_key = k.to_owned();
+    for _ in 0..rounds{
+        inc_key(&mut final_key)
+    }
+    final_key
+}
+
+
+pub fn swap(msg: &mut Vec<u8>){
+    let mut s = msg.split_off(msg.len()/2);
+    s.append(msg);
+    *msg = s;
+}
 
