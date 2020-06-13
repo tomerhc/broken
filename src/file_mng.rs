@@ -1,4 +1,6 @@
 use std::fs::{File, metadata};
+use std::io::{SeekFrom, Cursor};
+
 use std::io::prelude::*;
 use std::mem;
 use byteorder::{LittleEndian, WriteBytesExt};
@@ -32,7 +34,7 @@ pub fn write_clear_file(path: &str, buff: Vec<u8>) -> Result<(), DecryptErr>{
 /// Returns error if file not found or there is a problem in reading it.
 pub fn read_enc_file(path: &str) -> Result<counter_block::Blocks, DecryptErr>{
     // TODO: assertions
-    let mut f = File::open(path).unwrap();
+    let mut f = File::open(path)?;
     let mut block_size_buff = [0u8;mem::size_of::<i32>()];
     let mut nonce_size_buff = [0u8;mem::size_of::<i32>()];
     let mut rounds_num_buff = [0u8;mem::size_of::<i32>()];
@@ -97,6 +99,43 @@ pub fn write_blocks(mut cypher: counter_block::Blocks, path: &str) -> Result<(),
 }
 
 // TODO: load head / tail of file
+pub fn read_first_n(path: &str, n: i32, ) -> Result<counter_block::Blocks, DecryptErr>{
+    let mut f = File::open(path)?;
+    let mut block_size_buff = [0u8;mem::size_of::<i32>()];
+    let mut nonce_size_buff = [0u8;mem::size_of::<i32>()];
+    let mut rounds_num_buff = [0u8;mem::size_of::<i32>()];
+
+    f.read_exact(&mut block_size_buff)?;
+    f.read_exact(&mut nonce_size_buff)?;
+    f.read_exact(&mut rounds_num_buff)?;
+
+    let block_size: i32 = i32::from_le_bytes(block_size_buff);
+    let nonce_size: i32 = i32::from_le_bytes(nonce_size_buff);
+    let f_rounds: i32 = i32::from_le_bytes(rounds_num_buff);
+    let start_of_blocks = (3 * mem::size_of::<i32>()) as u64 + nonce_size as u64;
+    let len = n as usize * block_size as usize;
+    
+    let mut nonce = vec![0u8; nonce_size as usize];
+    f.read_exact(&mut nonce)?;
+
+    let blocks_vec: Vec<u8> = read_from_to(&mut f, start_of_blocks, len)?; 
+    let blocks: Vec<Vec<u8>> = blocks_vec.chunks_exact(block_size as usize).map(|x| x.to_vec()).collect();
+    Ok(counter_block::Blocks{
+        nonce,
+        f_rounds,
+        blocks
+    })
+}
+
+pub fn read_from_to(f: &mut File, from: u64, len: usize) -> std::io::Result<Vec<u8>>{
+    assert!(f.metadata().unwrap().len() > from + len as u64);
+    
+    let mut buff: Vec<u8> = vec![0u8;len];
+    let new_pos = f.seek(SeekFrom::Start(from))?;
+    f.read_exact(&mut buff)?;
+    Ok(buff)
+}
+
 // TODO: batch / directory reads and writes
 
 

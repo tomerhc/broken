@@ -2,6 +2,7 @@
 
 use std::env::args;
 use std::process::exit;
+use std::fs::File;
 mod hasher;
 mod feistel;
 mod counter_block;
@@ -9,7 +10,16 @@ mod file_mng;
 mod parse_args;
 mod error;
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+
+fn main(){
+    //let mut f = File::open(r"C:\Users\hacoh\Desktop\test.txt_enc").unwrap();
+    let blocks = file_mng::read_first_n(r"C:\Users\hacoh\Desktop\test.txt_enc", 5).unwrap();
+    let key = String::from("tomer").into_bytes();
+    let dec = counter_block::par_decrypt(blocks, key);
+    println!("{:?}", String::from_utf8(dec.unwrap()).unwrap());
+}
+
+fn _real_main() -> Result<(), Box<dyn std::error::Error>> {
     let parsed_args_res = parse_args::parse_args(args().collect());
     let parsed_args = match parsed_args_res {
         Ok(parsed_args) => parsed_args,
