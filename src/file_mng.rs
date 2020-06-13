@@ -131,7 +131,7 @@ pub fn read_from_to(f: &mut File, from: u64, len: usize) -> std::io::Result<Vec<
     assert!(f.metadata().unwrap().len() > from + len as u64);
     
     let mut buff: Vec<u8> = vec![0u8;len];
-    let new_pos = f.seek(SeekFrom::Start(from))?;
+    f.seek(SeekFrom::Start(from))?;
     f.read_exact(&mut buff)?;
     Ok(buff)
 }

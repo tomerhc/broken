@@ -2,7 +2,6 @@
 
 use std::env::args;
 use std::process::exit;
-use std::fs::File;
 mod hasher;
 mod feistel;
 mod counter_block;
@@ -11,15 +10,8 @@ mod parse_args;
 mod error;
 
 
-fn main(){
-    //let mut f = File::open(r"C:\Users\hacoh\Desktop\test.txt_enc").unwrap();
-    let blocks = file_mng::read_first_n(r"C:\Users\hacoh\Desktop\test.txt_enc", 5).unwrap();
-    let key = String::from("tomer").into_bytes();
-    let dec = counter_block::par_decrypt(blocks, key);
-    println!("{:?}", String::from_utf8(dec.unwrap()).unwrap());
-}
 
-fn _real_main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let parsed_args_res = parse_args::parse_args(args().collect());
     let parsed_args = match parsed_args_res {
         Ok(parsed_args) => parsed_args,
@@ -27,6 +19,7 @@ fn _real_main() -> Result<(), Box<dyn std::error::Error>> {
     };
     
     let mut enc_dec: bool = true;
+    let mut head_tail: Option<bool> = None;
     let mut path: String = String::new();
     let mut key: String = String::new();
     for (t, v) in parsed_args.into_iter(){
@@ -40,10 +33,12 @@ fn _real_main() -> Result<(), Box<dyn std::error::Error>> {
                 path = v
             },
             "key" => key = v,
+            "head" => head_tail = Some(true),
+            "tail" => head_tail = Some(false),
             _ => ()
         }
     }
-
+    
     if enc_dec {
         let f = file_mng::read_clear_file(&path)?;
         let pass = key.into_bytes();
@@ -51,14 +46,35 @@ fn _real_main() -> Result<(), Box<dyn std::error::Error>> {
         path.push_str("_enc");
         file_mng::write_blocks(cypher, &path)?;
     }else{
-        let f = file_mng::read_enc_file(&path)?;
+        let f: counter_block::Blocks;
+        match head_tail {
+            Some(t) => {
+                if t {
+                    f = file_mng::read_first_n(&path, 30)?; // TODO: set number of blocks
+                }
+                else {
+                    unimplemented!("tail feature is not implemented yet!");
+                }
+            },
+            None => {
+                f = file_mng::read_enc_file(&path)?;
+            }
+        }
         let pass = key.into_bytes();
         let dec = counter_block::par_decrypt(f, pass)?;
         let new_path = path.replace("_enc", "");
         file_mng::write_clear_file(&new_path, dec)?;
     }
-
+    
     Ok(())
+}
+
+fn _not_main(){
+    //let mut f = File::open(r"C:\Users\hacoh\Desktop\test.txt_enc").unwrap();
+    let blocks = file_mng::read_first_n(r"C:\Users\hacoh\Desktop\test.txt_enc", 5).unwrap();
+    let key = String::from("tomer").into_bytes();
+    let dec = counter_block::par_decrypt(blocks, key);
+    println!("{:?}", String::from_utf8(dec.unwrap()).unwrap());
 }
 
 #[cfg(test)]

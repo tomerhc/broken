@@ -15,10 +15,10 @@
 /// and then returns an Err(()), which will cause main to exit. 
 pub fn parse_args(mut argv: Vec<String>) -> Result<Vec<(String, String)>, ()>{
     argv.remove(0);
-    if argv.is_empty() || argv.len() % 2 != 0 {
-        print_usege();
-        return Err(())
-    }
+    // if argv.is_empty() || argv.len() % 2 != 0 {
+    //     print_usege();
+    //     return Err(())
+    // }
 
     let mut flags: Vec<(usize, &str)> = Vec::new();
     for (index, arg) in argv.iter().enumerate() {
@@ -47,6 +47,11 @@ pub fn parse_args(mut argv: Vec<String>) -> Result<Vec<(String, String)>, ()>{
                         final_args.push((String::from("key") ,String::from(&argv[index+1])));
                         used_flags.push(flag)
                     },
+            "-head" => {
+                        final_args.push((String::from("head") ,String::from("nothing")));
+                        used_flags.push(flag)
+                    },
+
             _ => {
                     print_usege();
                     return Err(())
