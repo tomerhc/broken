@@ -22,6 +22,7 @@ pub fn read_clear_file(path: &str) -> Result<Vec<u8>, EncryptErr>{
 /// # Errors
 /// returns an error if there is a problem creating the file or a problem writing to it. 
 pub fn write_clear_file(path: &str, buff: Vec<u8>) -> Result<(), DecryptErr>{
+
     let mut f = File::create(path)?;
     f.write_all(&buff)?;
     Ok(())

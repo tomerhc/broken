@@ -10,8 +10,40 @@ mod parse_args;
 mod error;
 
 
+extern crate grep;
+extern crate termcolor;
+use grep::{matcher, regex, searcher, printer};
+//use matcher::Matcher;
+use regex::RegexMatcher;
+use searcher::Searcher;
+//use searcher::sinks::UTF8;
+use printer::Standard;
+
+use termcolor::{ColorChoice, StandardStream, WriteColor};
+
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let f: Vec<u8> = file_mng::read_clear_file("/home/tomerh/Desktop/test.txt")?;
+    let wrt = StandardStream::stdout(ColorChoice::Always);
+    let mut printer = Standard::new(wrt);
+    let matcher = RegexMatcher::new(r"publishing")?;
+    let  matches: Vec<(u64, String)> = vec![];
+    Searcher::new().search_slice(&matcher, &f, printer.sink(&matcher))?;
+
+
+//    Searcher::new().search_slice(&matcher, &f, UTF8(|lnum, line| {
+//        // We are guaranteed to find a match, so the unwrap is OK.
+//        let mymatch = matcher.find(line.as_bytes())?.unwrap();
+//        matches.push((lnum, line[mymatch].to_string()));
+//        Ok(true)
+//    }))?;   
+//    println!("{:?}", matches);
+
+    Ok(())
+}
+
+
+fn _main() -> Result<(), Box<dyn std::error::Error>> {
     let parsed_args_res = parse_args::parse_args(args().collect());
     let parsed_args = match parsed_args_res {
         Ok(parsed_args) => parsed_args,
@@ -69,13 +101,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn _not_main(){
-    //let mut f = File::open(r"C:\Users\hacoh\Desktop\test.txt_enc").unwrap();
-    let blocks = file_mng::read_first_n(r"C:\Users\hacoh\Desktop\test.txt_enc", 5).unwrap();
-    let key = String::from("tomer").into_bytes();
-    let dec = counter_block::par_decrypt(blocks, key);
-    println!("{:?}", String::from_utf8(dec.unwrap()).unwrap());
-}
+
 
 #[cfg(test)]
 mod tests {
