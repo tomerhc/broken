@@ -4,9 +4,10 @@ use crypto_hash::{hex_digest, Algorithm};
 /// pads the key and msg to the same length, xors them and then preformes a SHA256 hash on the result.
 /// # Examples
 /// ```rust
-/// let msg = String::from("hello world!").into_bytes();
-/// let key = String::from("super_secret").into_bytes();
-/// let res = hash_xor_key(&mut msg, &key).unwrap();
+/// use common::hasher::hash_xor_key;
+/// let mut msg = String::from("hello world!").into_bytes();
+/// let mut key = String::from("super_secret").into_bytes();
+/// let res = hash_xor_key(&mut msg, &mut key).unwrap();
 
 /// ```
 pub fn hash_xor_key(msg: &mut Vec<u8>, key: &mut Vec<u8>) -> Result<Vec<u8>, EncryptErr> {
@@ -47,13 +48,13 @@ fn xor_key(v: &mut Vec<u8>, k: &mut Vec<u8>) -> Result<(), EncryptErr> {
 
 #[cfg(test)]
 mod tests {
-    use crate::hasher;
+    use super::*;
     #[test]
     fn hash_diff_len() {
         let mut msg = String::from("hello world, this is a string").into_bytes();
         let mut key = String::from("short").into_bytes();
         assert_eq!(
-            hasher::hash_xor_key(&mut msg, &mut key).unwrap(),
+            hash_xor_key(&mut msg, &mut key).unwrap(),
             String::from("2b273b58b5f5cb8c45b10c1e8d92262e0e49498d5baa339f737fb87b8efd2415")
                 .into_bytes()
         );

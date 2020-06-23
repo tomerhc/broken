@@ -1,21 +1,16 @@
+use common::*;
 #[warn(missing_debug_implementations, missing_docs)]
 use std::env::args;
 use std::process::exit;
-mod counter_block;
-mod error;
-mod feistel;
-mod file_mng;
-mod hasher;
 mod parse_args;
-mod rgrep;
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn _not_main() -> Result<(), Box<dyn std::error::Error>> {
     let f = file_mng::read_clear_file("/home/tomerh/Desktop/test.txt")?;
     rgrep::regex_grep(&f, r"Lorem")?;
     Ok(())
 }
 
-fn _main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let parsed_args_res = parse_args::parse_args(args().collect());
     let parsed_args = match parsed_args_res {
         Ok(parsed_args) => parsed_args,
