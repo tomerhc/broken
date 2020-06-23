@@ -13,11 +13,9 @@
 /// - unrecognized argument
 /// and then returns an Err(()), which will cause main to exit.
 pub fn parse_args(mut argv: Vec<String>) -> Result<Vec<(String, String)>, ()> {
+    //TODO: implement Args enum, write exapmle code in doc and deal with incorect number of
+    //arguments
     argv.remove(0);
-    // if argv.is_empty() || argv.len() % 2 != 0 {
-    //     print_usege();
-    //     return Err(())
-    // }
 
     let mut flags: Vec<(usize, &str)> = Vec::new();
     for (index, arg) in argv.iter().enumerate() {
