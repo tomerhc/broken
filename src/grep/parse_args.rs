@@ -26,7 +26,8 @@ pub enum Args {
 ///                     Args::Exp(String::from("/w+ hello /d"))]);
 /// ```
 pub fn parse_args(mut argv: Vec<String>) -> Result<Vec<Args>, ()> {
-    //TODO: deal with incorect number of arguments
+    //TODO: implement input validation from other parse_args
+
     argv.remove(0);
     let mut final_args: Vec<Args> = Vec::new(); // take last argument as the expretion
     let mut flags: Vec<(usize, &str)> = Vec::new();
@@ -87,3 +88,5 @@ fn print_usege() {
         brgrep -f <path/to/file/or/dir> -k <key> <expretion>"
     );
 }
+
+//TODO: tests

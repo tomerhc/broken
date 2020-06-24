@@ -3,6 +3,7 @@ use common::*;
 use std::env::args;
 use std::process::exit;
 mod parse_args;
+use parse_args::Args;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let parsed_args_res = parse_args::parse_args(args().collect());
@@ -15,20 +16,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut head_tail: Option<bool> = None;
     let mut path: String = String::new();
     let mut key: String = String::new();
-    for (t, v) in parsed_args.into_iter() {
-        match &t[..] {
-            "encrypt" => {
+    //TODO: deal with new Args type
+
+    for arg in parsed_args.into_iter() {
+        match arg {
+            Args::Key(v) => key = v,
+            Args::Encrypt(v) => {
+                path = v;
                 enc_dec = true;
-                path = v
             }
-            "decrypt" => {
+            Args::Decrypt(v) => {
+                path = v;
                 enc_dec = false;
-                path = v
             }
-            "key" => key = v,
-            "head" => head_tail = Some(true),
-            "tail" => head_tail = Some(false),
-            _ => (),
+            Args::Head => head_tail = Some(true),
+            Args::Tail => head_tail = Some(false),
         }
     }
 
