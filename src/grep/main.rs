@@ -10,7 +10,16 @@ use termcolor::{ColorChoice, StandardStream};
 mod parse_args;
 use parse_args::Args;
 
+use glob::MatchOptions;
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let options = MatchOptions::new();
+    let path = "/home/tomerh/Desktop/*nc";
+    file_mng::list_glob(path, options)?;
+    Ok(())
+}
+
+fn not_main() -> Result<(), Box<dyn std::error::Error>> {
     let parsed_args_res = parse_args::parse_args(args().collect());
     let parsed_args = match parsed_args_res {
         Ok(p) => p,
