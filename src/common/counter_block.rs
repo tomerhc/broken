@@ -31,7 +31,7 @@ impl Blocks {
         key: &str,
         block_size: usize,
         f_rounds: i32,
-        options: glob::MatchOptions,
+        options: MatchOptions,
     ) -> Vec<Result<Self, EncryptErr>> {
         let paths = file_mng::list_glob(path, options).unwrap();
         //let mut res: Vec<Blocks> = Vec::with_capacity(paths.len());
