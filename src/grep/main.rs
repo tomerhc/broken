@@ -14,8 +14,17 @@ use glob::MatchOptions;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let options = MatchOptions::new();
-    let path = "/home/tomerh/Desktop/*";
-    file_mng::list_glob(path, options)?;
+    let key = String::from("Barvaz");
+    let path = "/home/tomerh/Desktop/*.jpg";
+    let blocks = counter_block::Blocks::from_clear_glob(&path, &key, 100, 5, options);
+    for b in blocks.into_iter() {
+        match b {
+            (p, Ok(block)) => {
+                println!("{}, {:?}", p, block.nonce);
+            }
+            (_, Err(e)) => return Err(Box::from(e)),
+        }
+    }
     Ok(())
 }
 

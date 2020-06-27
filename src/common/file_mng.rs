@@ -47,8 +47,14 @@ pub fn read_enc_file(path: &str) -> Result<counter_block::Blocks, DecryptErr> {
     let block_size: i32 = i32::from_le_bytes(block_size_buff);
     let nonce_size: i32 = i32::from_le_bytes(nonce_size_buff);
     let f_rounds: i32 = i32::from_le_bytes(rounds_num_buff);
-    let rest_of_file =
-        f.metadata().unwrap().len() as usize - (3 * mem::size_of::<i32>()) - nonce_size as usize;
+    let file_size = f.metadata().unwrap().len() as usize;
+    if nonce_size > file_size as i32 {
+        return Err(DecryptErr::ioError(String::from(
+            "file not encrypted or corrupted",
+        )));
+    }
+
+    let rest_of_file = file_size - (3 * mem::size_of::<i32>()) - nonce_size as usize;
     let mut nonce = vec![0u8; nonce_size as usize];
     f.read_exact(&mut nonce)?;
 

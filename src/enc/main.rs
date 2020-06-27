@@ -1,8 +1,9 @@
-#[warn(missing_debug_implementations, missing_docs)]
+#[deny(missing_debug_implementations, missing_docs)]
 use common::*;
 use std::env::args;
 use std::process::exit;
 mod parse_args;
+use glob::MatchOptions;
 use parse_args::Args;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -16,7 +17,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut head_tail: Option<bool> = None;
     let mut path: String = String::new();
     let mut key: String = String::new();
-    //TODO: deal with new Args type
+    let mut is_glob: bool = true;
+    let mut options: MatchOptions = MatchOptions::new();
 
     for arg in parsed_args.into_iter() {
         match arg {
@@ -35,53 +37,110 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     if enc_dec {
-        let blocks = counter_block::Blocks::from_clear_file(&path, &key, 30, 5)?;
-        path.push_str("_enc");
-        blocks.to_enc_file(&path)?;
+        if is_glob {
+            encrypt_glob(&path, &key, options)?;
+        } else {
+            encrypt_single(&path, &key)?;
+        }
     } else {
-        match head_tail {
-            Some(h) => {
-                if h {
-                    let blocks = counter_block::Blocks::from_enc_head(&path, 100)?;
-                    let new_path = path.replace("_enc", "");
-                    blocks.to_clear_file(&key, &new_path)?;
-                } else {
-                    unimplemented!("tail feature is not implemented yet!");
+        if is_glob {
+            match head_tail {
+                Some(t) => {
+                    if t {
+                        decrypt_glob_head(&path, &key, options)?
+                    } else {
+                        unimplemented!("tail not implemented")
+                    }
                 }
+                None => decrypt_glob(&path, &key, options)?,
             }
-            None => {
-                let blocks = counter_block::Blocks::from_enc_file(&path)?;
-                let new_path = path.replace("_enc", "");
-                blocks.to_clear_file(&key, &new_path)?;
+        } else {
+            match head_tail {
+                Some(t) => {
+                    if t {
+                        decrypt_single_head(&path, &key)?
+                    } else {
+                        unimplemented!("tail not implemented")
+                    }
+                }
+                None => decrypt_single_head(&path, &key)?,
             }
         }
     }
+    Ok(())
+}
 
-    //   if enc_dec {
-    //       let f = file_mng::read_clear_file(&path)?;
-    //       let pass = key.into_bytes();
-    //       let cypher = counter_block::par_encrypt(f, pass, 30, 5)?;
-    //       path.push_str("_enc");
-    //       file_mng::write_blocks(cypher, &path)?;
-    //   } else {
-    //       let f: counter_block::Blocks;
-    //       match head_tail {
-    //           Some(t) => {
-    //               if t {
-    //                   f = file_mng::read_first_n(&path, 30)?; // TODO: set number of blocks
-    //               } else {
-    //                   unimplemented!("tail feature is not implemented yet!");
-    //               }
-    //           }
-    //           None => {
-    //               f = file_mng::read_enc_file(&path)?;
-    //           }
-    //       }
-    //       let pass = key.into_bytes();
-    //       let dec = counter_block::par_decrypt(f, pass)?;
-    //       let new_path = path.replace("_enc", "");
-    //       file_mng::write_clear_file(&new_path, dec)?;
-    //   }
+fn encrypt_single(path: &str, key: &str) -> Result<(), error::EncryptErr> {
+    let blocks = counter_block::Blocks::from_clear_file(&path, &key, 30, 5)?;
+    let new_path = format!("{}_enc", path);
+    blocks.to_enc_file(&new_path)
+}
 
+fn encrypt_glob(path: &str, key: &str, options: MatchOptions) -> Result<(), error::EncryptErr> {
+    let globs = counter_block::Blocks::from_clear_glob(path, key, 100, 5, options);
+    for b in globs {
+        match b {
+            (p, Ok(blocks)) => {
+                let new_path = format!("{}_enc", p);
+                blocks.to_enc_file(&new_path)?;
+            }
+            (p, Err(e)) => {
+                println!("Error in file: {}", p);
+                return Err(e);
+            }
+        }
+    }
+    Ok(())
+}
+
+fn decrypt_single(path: &str, key: &str) -> Result<(), error::DecryptErr> {
+    let blocks = counter_block::Blocks::from_enc_file(path)?;
+    let new_path = path.replace("_enc", "");
+    blocks.to_clear_file(&key, &new_path)?;
+    Ok(())
+}
+
+fn decrypt_glob(path: &str, key: &str, options: MatchOptions) -> Result<(), error::DecryptErr> {
+    let globs = counter_block::Blocks::from_enc_glob(path, options);
+    for b in globs {
+        match b {
+            (p, Ok(blocks)) => {
+                let new_path = p.replace("_enc", "");
+                blocks.to_clear_file(&key, &new_path)?;
+            }
+            (p, Err(e)) => {
+                println!("Error in file: {}", p);
+                return Err(e);
+            }
+        }
+    }
+    Ok(())
+}
+
+fn decrypt_single_head(path: &str, key: &str) -> Result<(), error::DecryptErr> {
+    let blocks = counter_block::Blocks::from_enc_head(path, 100)?;
+    let new_path = path.replace("_enc", "");
+    blocks.to_clear_file(&key, &new_path)?;
+    Ok(())
+}
+
+fn decrypt_glob_head(
+    path: &str,
+    key: &str,
+    options: MatchOptions,
+) -> Result<(), error::DecryptErr> {
+    let globs = counter_block::Blocks::from_enc_glob_head(path, options, 100);
+    for b in globs {
+        match b {
+            (p, Ok(blocks)) => {
+                let new_path = p.replace("_enc", "");
+                blocks.to_clear_file(&key, &new_path)?;
+            }
+            (p, Err(e)) => {
+                println!("Error in file: {}", p);
+                return Err(e);
+            }
+        }
+    }
     Ok(())
 }

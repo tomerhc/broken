@@ -7,7 +7,7 @@ use glob::MatchOptions;
 use rand::Rng;
 use rayon::prelude::*;
 use std::mem;
-// TODO: maybe rename struct to file / msg and implement functions as methods in an OOP style?
+
 pub struct Blocks {
     pub nonce: Vec<u8>,
     pub f_rounds: i32,
@@ -32,12 +32,14 @@ impl Blocks {
         block_size: usize,
         f_rounds: i32,
         options: MatchOptions,
-    ) -> Vec<Result<Self, EncryptErr>> {
+    ) -> Vec<(String, Result<Blocks, EncryptErr>)> {
         let paths = file_mng::list_glob(path, options).unwrap();
-        //let mut res: Vec<Blocks> = Vec::with_capacity(paths.len());
-        let res: Vec<Result<Blocks, EncryptErr>> = paths
+        let res: Vec<(String, Result<Blocks, EncryptErr>)> = paths
             .into_par_iter()
-            .map(|p| Blocks::from_clear_file(&p, key, block_size, f_rounds))
+            .map(|p| {
+                let b = Blocks::from_clear_file(&p, key, block_size, f_rounds);
+                (p, b)
+            })
             .collect();
         res
     }
@@ -50,6 +52,36 @@ impl Blocks {
         file_mng::read_first_n(path, block_num)
     }
 
+    pub fn from_enc_glob(
+        path: &str,
+        options: MatchOptions,
+    ) -> Vec<(String, Result<Self, DecryptErr>)> {
+        let paths = file_mng::list_glob(path, options).unwrap();
+        let res: Vec<(String, Result<Self, DecryptErr>)> = paths
+            .into_par_iter()
+            .map(|p| {
+                let b = file_mng::read_enc_file(&p);
+                (p, b)
+            })
+            .collect();
+        res
+    }
+
+    pub fn from_enc_glob_head(
+        path: &str,
+        options: MatchOptions,
+        block_num: i32,
+    ) -> Vec<(String, Result<Self, DecryptErr>)> {
+        let paths = file_mng::list_glob(path, options).unwrap();
+        let res: Vec<(String, Result<Self, DecryptErr>)> = paths
+            .into_par_iter()
+            .map(|p| {
+                let b = file_mng::read_first_n(&p, block_num);
+                (p, b)
+            })
+            .collect();
+        res
+    }
     pub fn into_clear(self, key: &str) -> Result<Vec<u8>, DecryptErr> {
         let pass = key.to_owned().into_bytes();
         par_decrypt(self, pass)
