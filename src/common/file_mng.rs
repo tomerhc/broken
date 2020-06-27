@@ -151,12 +151,16 @@ pub fn read_from_to(f: &mut File, from: u64, len: usize) -> std::io::Result<Vec<
 
 // TODO: batch / directory reads and writes
 
-pub fn list_glob(path: &str, options: MatchOptions) -> Result<(), Box<dyn std::error::Error>> {
+pub fn list_glob(
+    path: &str,
+    options: MatchOptions,
+) -> Result<Vec<String>, Box<dyn std::error::Error>> {
     let paths = glob_with(path, options)?;
+    let mut res: Vec<String> = Vec::new();
     for entry in paths {
         if let Ok(p) = entry {
-            println!("{:?}", p);
+            res.push(p.display().to_string());
         }
     }
-    Ok(())
+    Ok(res)
 }

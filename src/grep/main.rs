@@ -14,7 +14,7 @@ use glob::MatchOptions;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let options = MatchOptions::new();
-    let path = "/home/tomerh/Desktop/*nc";
+    let path = "/home/tomerh/Desktop/*";
     file_mng::list_glob(path, options)?;
     Ok(())
 }

@@ -1,16 +1,69 @@
 use crate::error::*;
 use crate::feistel;
+use crate::file_mng;
 use byteorder;
 use byteorder::{LittleEndian, WriteBytesExt};
+use glob::MatchOptions;
 use rand::Rng;
 use rayon::prelude::*;
 use std::mem;
-
 // TODO: maybe rename struct to file / msg and implement functions as methods in an OOP style?
 pub struct Blocks {
     pub nonce: Vec<u8>,
     pub f_rounds: i32,
     pub blocks: Vec<Vec<u8>>,
+}
+
+impl Blocks {
+    pub fn from_clear_file(
+        path: &str,
+        key: &str,
+        block_size: usize,
+        f_rounds: i32,
+    ) -> Result<Self, EncryptErr> {
+        let f = file_mng::read_clear_file(path)?;
+        let pass = key.to_owned().into_bytes();
+        par_encrypt(f, pass, block_size, f_rounds)
+    }
+
+    pub fn from_clear_glob(
+        path: &str,
+        key: &str,
+        block_size: usize,
+        f_rounds: i32,
+        options: glob::MatchOptions,
+    ) -> Vec<Result<Self, EncryptErr>> {
+        let paths = file_mng::list_glob(path, options).unwrap();
+        //let mut res: Vec<Blocks> = Vec::with_capacity(paths.len());
+        let res: Vec<Result<Blocks, EncryptErr>> = paths
+            .into_par_iter()
+            .map(|p| Blocks::from_clear_file(&p, key, block_size, f_rounds))
+            .collect();
+        res
+    }
+
+    pub fn from_enc_file(path: &str) -> Result<Self, DecryptErr> {
+        file_mng::read_enc_file(&path)
+    }
+
+    pub fn from_enc_head(path: &str, block_num: i32) -> Result<Self, DecryptErr> {
+        file_mng::read_first_n(path, block_num)
+    }
+
+    pub fn into_clear(self, key: &str) -> Result<Vec<u8>, DecryptErr> {
+        let pass = key.to_owned().into_bytes();
+        par_decrypt(self, pass)
+    }
+
+    pub fn to_clear_file(self, key: &str, path: &str) -> Result<(), DecryptErr> {
+        let pass = key.to_owned().into_bytes();
+        let dec = par_decrypt(self, pass)?;
+        file_mng::write_clear_file(path, dec)
+    }
+
+    pub fn to_enc_file(self, path: &str) -> Result<(), EncryptErr> {
+        file_mng::write_blocks(self, path)
+    }
 }
 
 pub fn par_encrypt(
