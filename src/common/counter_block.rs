@@ -1,13 +1,20 @@
 use crate::error::*;
 use crate::feistel;
 use crate::file_mng;
-use byteorder;
 use byteorder::{LittleEndian, WriteBytesExt};
 use glob::MatchOptions;
 use rand::Rng;
 use rayon::prelude::*;
 use std::mem;
 
+/// The Blocks struct is the basic object containing all the information for encrypting or
+/// decrypting a byte array. it is used for loading a byte array (from a file or a vector),
+/// manipulating it, and writing the results.
+///
+/// # Propreties
+/// nonce: the random seed that is incremented for every block encryption.
+/// f_rounds: the number of fiestel rounds to preform
+/// blocks: the actual byte arrays.
 pub struct Blocks {
     pub nonce: Vec<u8>,
     pub f_rounds: i32,
@@ -15,6 +22,9 @@ pub struct Blocks {
 }
 
 impl Blocks {
+    /// Read a clear file and generate a Blocks struct containing the encrypted data.
+    /// This method is inteded for use incase of a signle file encryption, and preforms the
+    /// encryption in parallel.
     pub fn from_clear_file(
         path: &str,
         key: &str,
@@ -26,6 +36,9 @@ impl Blocks {
         par_encrypt(f, pass, block_size, f_rounds)
     }
 
+    /// Read a glob of clear files and generate Blocks structs containing the encrypted data.
+    /// this method is intended for use incase of multiple files encryption, and will encrypt the
+    /// files in parallel, rather then encrypting the block of every individual file in parallel.
     pub fn from_clear_glob(
         path: &str,
         key: &str,
@@ -44,14 +57,21 @@ impl Blocks {
         res
     }
 
+    /// Read the contants of an encrypted file and generate a Blocks struct for it, parsing all the
+    /// serialized variables (nonce, block size etc.). The Blocks struct will contain the encrypted
+    /// data, which can then be decrypted with the into_clear method.
     pub fn from_enc_file(path: &str) -> Result<Self, DecryptErr> {
         file_mng::read_enc_file(&path)
     }
 
+    /// Same as from_enc_file, but only reads the first n blocks of the file.
     pub fn from_enc_head(path: &str, block_num: i32) -> Result<Self, DecryptErr> {
         file_mng::read_first_n(path, block_num)
     }
 
+    /// Read the contants of all encrypted files in a glob and generate a Blocks struct for it, parsing all the
+    /// serialized variables (nonce, block size etc.). The Blocks struct will contain the encrypted
+    /// data, which can then be decrypted with the into_clear method.
     pub fn from_enc_glob(
         path: &str,
         options: MatchOptions,
@@ -67,6 +87,7 @@ impl Blocks {
         res
     }
 
+    /// Same as from_enc_glob, but only reads the first n blocks of every file.
     pub fn from_enc_glob_head(
         path: &str,
         options: MatchOptions,
@@ -82,22 +103,29 @@ impl Blocks {
             .collect();
         res
     }
+
+    /// Given the correct key, consumes the struct and returns a decrypted byte vector containing the original data.
     pub fn into_clear(self, key: &str) -> Result<Vec<u8>, DecryptErr> {
         let pass = key.to_owned().into_bytes();
         par_decrypt(self, pass)
     }
 
-    pub fn to_clear_file(self, key: &str, path: &str) -> Result<(), DecryptErr> {
+    /// Given the correct key, consume the struct and write the decrypted contants of the struct to
+    /// a file.
+    pub fn into_clear_file(self, key: &str, path: &str) -> Result<(), DecryptErr> {
         let pass = key.to_owned().into_bytes();
         let dec = par_decrypt(self, pass)?;
         file_mng::write_clear_file(path, dec)
     }
 
-    pub fn to_enc_file(self, path: &str) -> Result<(), EncryptErr> {
+    /// writes the encrypted contents and variable of the struct to a file.
+    pub fn into_enc_file(self, path: &str) -> Result<(), EncryptErr> {
         file_mng::write_blocks(self, path)
     }
 }
 
+/// Preformes a parallel block encryption, using Counter Block mode of operation, and fiestel
+/// cypher method.
 pub fn par_encrypt(
     mut msg: Vec<u8>,
     key: Vec<u8>,
@@ -139,6 +167,8 @@ pub fn par_encrypt(
 }
 
 // may cause trailing null problems!!!!
+/// Preformes a parallel block decryption using Counter Block mode of operation, and fiestel cypher
+/// method.
 pub fn par_decrypt(b: Blocks, key: Vec<u8>) -> Result<Vec<u8>, DecryptErr> {
     // TODO: assertions
 
@@ -173,6 +203,8 @@ pub fn par_decrypt(b: Blocks, key: Vec<u8>) -> Result<Vec<u8>, DecryptErr> {
 
 // }
 
+/// The function used by par_encrypt to preform the actual encryption of every block of the
+/// messege.
 fn encrypt_par_block(
     nonce: Vec<u8>,
     mut chunk: Vec<u8>,
@@ -190,6 +222,7 @@ fn encrypt_par_block(
     Ok(chunk)
 }
 
+/// Generates a random nonce to be used in the ecnryption algorithm.
 fn nonce_gen(nonce_len: usize) -> Vec<u8> {
     let v: Vec<u8> = (0..nonce_len)
         .map(|_| {
@@ -200,6 +233,7 @@ fn nonce_gen(nonce_len: usize) -> Vec<u8> {
     v
 }
 
+/// Appends an i64 counter to the nonce in orded to mutate it for every block.
 fn get_nonce_counter(nonce: &[u8], counter: i64) -> Vec<u8> {
     let mut nonce_counter = nonce.to_vec();
     let mut buff = [0u8; mem::size_of::<i64>()];
@@ -208,6 +242,9 @@ fn get_nonce_counter(nonce: &[u8], counter: i64) -> Vec<u8> {
     nonce_counter
 }
 
+/// pads the cypher generated from xor-ing the nonce with the key, in preperation for xor-ing it
+/// with the messege block. The padding is done by duplicating the cypher and then truncating it to
+/// size.
 fn pad_cypher(cypher: &mut Vec<u8>, block_size: usize) {
     while cypher.len() < block_size {
         cypher.append(&mut cypher.clone());
@@ -215,12 +252,17 @@ fn pad_cypher(cypher: &mut Vec<u8>, block_size: usize) {
     cypher.truncate(block_size)
 }
 
+/// Pads the messege block in preperation for xor-ing it with the cypher. The padding is trailing
+/// nulls
 fn pad_chunk(chunk: &mut Vec<u8>, block_size: usize) {
     for _ in 0..block_size - chunk.len() {
         chunk.push(b'\x00');
     }
 }
 
+/// Non-parallel encryption of a byte array. returns a Blocks struct containing the encrypted data.
+/// This function is intended for use incase of encrypting of multiple files, where the files are
+/// encrypted in parallel, not the blocks of every individual file.
 pub fn encrypt(
     mut msg: Vec<u8>,
     key: Vec<u8>,
@@ -254,6 +296,9 @@ pub fn encrypt(
     })
 }
 
+/// Non-parallel decryption of a byte array. returns a Blocks struct containing the decrypted data.
+/// This function is intended for use incase of decrypting of multiple files, where the files are
+/// decrypted in parallel, not the blocks of every individual file.
 pub fn decrypt(b: Blocks, key: Vec<u8>) -> Result<Vec<u8>, DecryptErr> {
     // TODO: remove function
 

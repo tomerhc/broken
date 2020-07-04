@@ -19,7 +19,7 @@ impl fmt::Display for ArgErr {
 #[derive(Debug)]
 pub enum EncryptErr {
     HashErr,
-    ioError(String),
+    IoError(String),
 }
 
 impl Error for EncryptErr {}
@@ -32,14 +32,14 @@ impl fmt::Display for EncryptErr {
 
 impl From<std::io::Error> for EncryptErr {
     fn from(e: std::io::Error) -> EncryptErr {
-        EncryptErr::ioError(format!("{}", e))
+        EncryptErr::IoError(format!("{}", e))
     }
 }
 
 #[derive(Debug)]
 pub enum DecryptErr {
     HashErr,
-    ioError(String),
+    IoError(String),
 }
 
 impl Error for DecryptErr {}
@@ -54,13 +54,13 @@ impl From<EncryptErr> for DecryptErr {
     fn from(e: EncryptErr) -> DecryptErr {
         match e {
             EncryptErr::HashErr => DecryptErr::HashErr,
-            EncryptErr::ioError(s) => DecryptErr::ioError(s),
+            EncryptErr::IoError(s) => DecryptErr::IoError(s),
         }
     }
 }
 
 impl From<std::io::Error> for DecryptErr {
     fn from(e: std::io::Error) -> DecryptErr {
-        DecryptErr::ioError(format!("{}", e))
+        DecryptErr::IoError(format!("{}", e))
     }
 }

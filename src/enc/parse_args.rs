@@ -90,7 +90,7 @@ pub fn parse_args(mut argv: Vec<String>) -> Result<Vec<Args>, ArgErr> {
     //    }
 }
 
-fn validate_input(v: &Vec<Args>) -> Result<(), ArgErr> {
+fn validate_input(v: &[Args]) -> Result<(), ArgErr> {
     let mut enc: u8 = 0;
     let mut dec: u8 = 0;
     let mut key: u8 = 0;

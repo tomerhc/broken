@@ -49,7 +49,7 @@ pub fn read_enc_file(path: &str) -> Result<counter_block::Blocks, DecryptErr> {
     let f_rounds: i32 = i32::from_le_bytes(rounds_num_buff);
     let file_size = f.metadata().unwrap().len() as usize;
     if nonce_size > file_size as i32 {
-        return Err(DecryptErr::ioError(String::from(
+        return Err(DecryptErr::IoError(String::from(
             "file not encrypted or corrupted",
         )));
     }
