@@ -5,7 +5,7 @@ use std::fmt;
 pub enum ArgErr {
     MissingArg,
     ArgMismatch,
-    UnknownArg,
+    UnknownArg(String),
 }
 
 impl Error for ArgErr {}
