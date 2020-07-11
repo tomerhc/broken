@@ -36,15 +36,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let f: counter_block::Blocks;
+    let mut block_num: i64 = 0;
     if head {
-        f = file_mng::read_first_n(&file_path, 30)?; //TODO: set number pf bytes
+        f = file_mng::read_first_n(&file_path, 30)?; //TODO: set number of bytes
     } else if tail {
-        unimplemented!("tail feature unimplemented yet!");
+        let res = file_mng::read_last_n(&file_path, 30)?; //TODO: set number of bytes
+        f = res.0;
+        block_num = res.1;
     } else {
         f = file_mng::read_enc_file(&file_path)?;
     }
     let pass = key.into_bytes();
-    let dec_bytes = counter_block::par_decrypt(f, pass)?;
+    let dec_bytes = counter_block::par_decrypt(f, pass, block_num)?;
     regex_grep(&dec_bytes, &exp)?;
     Ok(())
 }

@@ -18,6 +18,8 @@ pub fn encrypt(mut msg: Vec<u8>, mut key: Vec<u8>, rounds: i32) -> Result<Vec<u8
     Ok(msg)
 }
 
+/// Decrypt a vector of bytes using a fiestel network.
+/// This function is not used by the crate, because of the counter block mode-of-operation.
 pub fn decrypt(mut msg: Vec<u8>, mut key: Vec<u8>, rounds: i32) -> Result<Vec<u8>, DecryptErr> {
     // TODO: assertions
     pad_key(&mut key, 64);
@@ -56,6 +58,8 @@ pub fn fiestel_round(msg: &mut Vec<u8>, k: &[u8]) -> Result<(), EncryptErr> {
     Ok(())
 }
 
+/// the irreversibel function used by the fiestel network. In this case I implemented a simple xor
+/// with a key.
 fn f_func(v: &mut Vec<u8>, k: &[u8]) -> Result<Vec<u8>, EncryptErr> {
     hash_xor_key(v, &mut k.to_owned())
 }
@@ -68,6 +72,8 @@ fn dec_key(k: &mut Vec<u8>) {
     k.iter_mut().for_each(|x| *x -= 1);
 }
 
+/// calculate the final key, to be used in decryption (where we start from the final key and
+/// decrement it for each round)
 fn calc_final_key(k: &[u8], rounds: i32) -> Vec<u8> {
     let mut final_key = k.to_owned();
     for _ in 0..rounds {
@@ -76,6 +82,7 @@ fn calc_final_key(k: &[u8], rounds: i32) -> Vec<u8> {
     final_key
 }
 
+/// Swap the left and right parts of the msg.
 pub fn swap(msg: &mut Vec<u8>) {
     let mut s = msg.split_off(msg.len() / 2);
     s.append(msg);

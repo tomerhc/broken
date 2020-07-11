@@ -1,3 +1,4 @@
+#![warn(missing_debug_implementations, missing_docs)]
 use crate::error::*;
 use crate::feistel;
 use crate::file_mng;
@@ -10,14 +11,13 @@ use std::mem;
 /// The Blocks struct is the basic object containing all the information for encrypting or
 /// decrypting a byte array. it is used for loading a byte array (from a file or a vector),
 /// manipulating it, and writing the results.
-///
-/// # Propreties
-/// nonce: the random seed that is incremented for every block encryption.
-/// f_rounds: the number of fiestel rounds to preform
-/// blocks: the actual byte arrays.
+#[derive(Debug)]
 pub struct Blocks {
+    /// nonce: the random seed that is incremented for every block encryption.
     pub nonce: Vec<u8>,
+    /// f_rounds: the number of fiestel rounds to preform
     pub f_rounds: i32,
+    /// blocks: the actual byte arrays.
     pub blocks: Vec<Vec<u8>>,
 }
 
@@ -69,6 +69,11 @@ impl Blocks {
         file_mng::read_first_n(path, block_num)
     }
 
+    /// Same as from_enc_file, but only reads the last n blocks of the file.
+    pub fn from_enc_tail(path: &str, block_num: i32) -> Result<(Self, i64), DecryptErr> {
+        file_mng::read_last_n(path, block_num)
+    }
+
     /// Read the contants of all encrypted files in a glob and generate a Blocks struct for it, parsing all the
     /// serialized variables (nonce, block size etc.). The Blocks struct will contain the encrypted
     /// data, which can then be decrypted with the into_clear method.
@@ -104,17 +109,39 @@ impl Blocks {
         res
     }
 
+    /// Same as from_enc_glob, but only reads the last n blocks of every file.
+    pub fn from_enc_glob_tail(
+        path: &str,
+        options: MatchOptions,
+        block_num: i32,
+    ) -> Vec<(String, Result<(Self, i64), DecryptErr>)> {
+        let paths = file_mng::list_glob(path, options).unwrap();
+        let res: Vec<(String, Result<(Self, i64), DecryptErr>)> = paths
+            .into_par_iter()
+            .map(|p| {
+                let b = file_mng::read_last_n(&p, block_num);
+                (p, b)
+            })
+            .collect();
+        res
+    }
+
     /// Given the correct key, consumes the struct and returns a decrypted byte vector containing the original data.
-    pub fn into_clear(self, key: &str) -> Result<Vec<u8>, DecryptErr> {
+    pub fn into_clear(self, key: &str, start_block: i64) -> Result<Vec<u8>, DecryptErr> {
         let pass = key.to_owned().into_bytes();
-        par_decrypt(self, pass)
+        par_decrypt(self, pass, start_block)
     }
 
     /// Given the correct key, consume the struct and write the decrypted contants of the struct to
     /// a file.
-    pub fn into_clear_file(self, key: &str, path: &str) -> Result<(), DecryptErr> {
+    pub fn into_clear_file(
+        self,
+        key: &str,
+        path: &str,
+        start_block: i64,
+    ) -> Result<(), DecryptErr> {
         let pass = key.to_owned().into_bytes();
-        let dec = par_decrypt(self, pass)?;
+        let dec = par_decrypt(self, pass, start_block)?;
         file_mng::write_clear_file(path, dec)
     }
 
@@ -169,16 +196,14 @@ pub fn par_encrypt(
 // may cause trailing null problems!!!!
 /// Preformes a parallel block decryption using Counter Block mode of operation, and fiestel cypher
 /// method.
-pub fn par_decrypt(b: Blocks, key: Vec<u8>) -> Result<Vec<u8>, DecryptErr> {
-    // TODO: assertions
-
+pub fn par_decrypt(b: Blocks, key: Vec<u8>, start_block: i64) -> Result<Vec<u8>, DecryptErr> {
     let (nonce, blocks) = (b.nonce, b.blocks);
     let block_len = blocks[0].len();
     let f_rounds = b.f_rounds;
     let mut all_batches: Vec<(Vec<u8>, Vec<u8>)> = Vec::new();
     let mut msg: Vec<u8> = Vec::with_capacity(blocks.len() * blocks[0].len());
     for (counter, block) in blocks.into_iter().enumerate() {
-        let nonce_counter: Vec<u8> = get_nonce_counter(&nonce, counter as i64);
+        let nonce_counter: Vec<u8> = get_nonce_counter(&nonce, counter as i64 + start_block);
         all_batches.push((nonce_counter, block));
     }
 
@@ -197,11 +222,6 @@ pub fn par_decrypt(b: Blocks, key: Vec<u8>) -> Result<Vec<u8>, DecryptErr> {
     }
     Ok(msg)
 }
-
-// TODO: decrypt by block num
-// pub fn decrypt_block(b: Blocks, block_num: usize){
-
-// }
 
 /// The function used by par_encrypt to preform the actual encryption of every block of the
 /// messege.
@@ -299,12 +319,10 @@ pub fn encrypt(
 /// Non-parallel decryption of a byte array. returns a Blocks struct containing the decrypted data.
 /// This function is intended for use incase of decrypting of multiple files, where the files are
 /// decrypted in parallel, not the blocks of every individual file.
-pub fn decrypt(b: Blocks, key: Vec<u8>) -> Result<Vec<u8>, DecryptErr> {
-    // TODO: remove function
-
+pub fn decrypt(b: Blocks, key: Vec<u8>, start_block: i64) -> Result<Vec<u8>, DecryptErr> {
     let nonce = b.nonce;
     let mut blocks = b.blocks;
-    let mut counter: i64 = 0;
+    let mut counter: i64 = start_block;
     let mut msg: Vec<u8> = Vec::with_capacity(blocks.len() * blocks[0].len());
     for mut block in blocks.iter_mut() {
         let nonce_counter: Vec<u8> = get_nonce_counter(&nonce, counter);
@@ -329,7 +347,7 @@ mod tests {
             .into_bytes();
         let key = String::from("super_secret123!@#").into_bytes();
         let blocks = counter_block::par_encrypt(msg, key.clone(), 15, 5).unwrap();
-        let dec = counter_block::par_decrypt(blocks, key).unwrap();
+        let dec = counter_block::par_decrypt(blocks, key, 0).unwrap();
 
         assert_eq!(
             String::from_utf8(dec).unwrap().trim_matches(char::from(0)),
@@ -349,7 +367,7 @@ mod tests {
         let key = String::from("super_secret123!@#").into_bytes();
         let wrong_key = String::from("incorrect!").into_bytes();
         let blocks = counter_block::par_encrypt(msg, key.clone(), 15, 5).unwrap();
-        let dec = counter_block::par_decrypt(blocks, wrong_key).unwrap();
+        let dec = counter_block::par_decrypt(blocks, wrong_key, 0).unwrap();
 
         assert_ne!(
             dec,

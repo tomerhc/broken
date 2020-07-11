@@ -1,4 +1,4 @@
-#![warn(missing_debug_implementations, missing_docs)]
+#![warn(missing_debug_implementations)]
 use common::*;
 use std::env::args;
 use std::process::exit;
@@ -48,7 +48,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 if t {
                     decrypt_glob_head(&path, &key, options)?
                 } else {
-                    unimplemented!("tail not implemented")
+                    decrypt_glob_tail(&path, &key, options)?
                 }
             }
             None => decrypt_glob(&path, &key, options)?,
@@ -59,7 +59,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 if t {
                     decrypt_single_head(&path, &key)?
                 } else {
-                    unimplemented!("tail not implemented")
+                    decrypt_single_tail(&path, &key)?
                 }
             }
             None => decrypt_single(&path, &key)?,
@@ -105,7 +105,7 @@ fn encrypt_glob(path: &str, key: &str, options: MatchOptions) -> Result<(), erro
 fn decrypt_single(path: &str, key: &str) -> Result<(), error::DecryptErr> {
     let blocks = counter_block::Blocks::from_enc_file(path)?;
     let new_path = path.replace("_enc", "");
-    blocks.into_clear_file(&key, &new_path)?;
+    blocks.into_clear_file(&key, &new_path, 0)?;
     Ok(())
 }
 
@@ -120,7 +120,7 @@ fn decrypt_glob(path: &str, key: &str, options: MatchOptions) -> Result<(), erro
         match b {
             (p, Ok(blocks)) => {
                 let new_path = p.replace("_enc", "");
-                blocks.into_clear_file(&key, &new_path)?;
+                blocks.into_clear_file(&key, &new_path, 0)?;
             }
             (p, Err(e)) => {
                 println!("Error in file: {}", p);
@@ -136,7 +136,7 @@ fn decrypt_glob(path: &str, key: &str, options: MatchOptions) -> Result<(), erro
 fn decrypt_single_head(path: &str, key: &str) -> Result<(), error::DecryptErr> {
     let blocks = counter_block::Blocks::from_enc_head(path, 100)?;
     let new_path = path.replace("_enc", "");
-    blocks.into_clear_file(&key, &new_path)?;
+    blocks.into_clear_file(&key, &new_path, 0)?;
     Ok(())
 }
 
@@ -152,7 +152,41 @@ fn decrypt_glob_head(
         match b {
             (p, Ok(blocks)) => {
                 let new_path = p.replace("_enc", "");
-                blocks.into_clear_file(&key, &new_path)?;
+                blocks.into_clear_file(&key, &new_path, 0)?;
+            }
+            (p, Err(e)) => {
+                println!("Error in file: {}", p);
+                return Err(e);
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Wrapper function for decrypting only the last n blocks of an encrypted file.
+/// This function will most likely only be used for greping over encrypted files.
+fn decrypt_single_tail(path: &str, key: &str) -> Result<(), error::DecryptErr> {
+    let res = counter_block::Blocks::from_enc_tail(path, 100)?;
+    let blocks = res.0;
+    let block_num = res.1;
+    let new_path = path.replace("_enc", "");
+    blocks.into_clear_file(&key, &new_path, block_num)?;
+    Ok(())
+}
+
+/// Wrapper function for decrypting only the last n blocks of a glob of encrypted files.   
+/// This function will most likely only be used for greping over encrypted files.
+fn decrypt_glob_tail(
+    path: &str,
+    key: &str,
+    options: MatchOptions,
+) -> Result<(), error::DecryptErr> {
+    let globs = counter_block::Blocks::from_enc_glob_tail(path, options, 100);
+    for b in globs {
+        match b {
+            (p, Ok((blocks, block_num))) => {
+                let new_path = p.replace("_enc", "");
+                blocks.into_clear_file(&key, &new_path, block_num)?;
             }
             (p, Err(e)) => {
                 println!("Error in file: {}", p);

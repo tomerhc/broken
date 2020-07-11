@@ -140,7 +140,6 @@ fn validate_input(v: &[Args]) -> Result<(), ArgErr> {
             Args::Tail => tail += 1,
         }
     }
-    println!("{:?}", v);
     if file != 1 {
         print_usege();
         return Err(ArgErr::MissingArg);

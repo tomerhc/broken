@@ -1,11 +1,11 @@
-use glob::{glob_with, MatchOptions};
-use std::fs::{metadata, File};
-use std::io::{Cursor, SeekFrom};
-
 use crate::counter_block;
 use crate::error::*;
 use byteorder::{LittleEndian, WriteBytesExt};
+use glob::{glob_with, MatchOptions};
+use std::cmp::max;
+use std::fs::{metadata, File};
 use std::io::prelude::*;
+use std::io::{Cursor, SeekFrom};
 use std::mem;
 
 ///Used for reading a file for encryption
@@ -115,6 +115,9 @@ pub fn write_blocks(mut cypher: counter_block::Blocks, path: &str) -> Result<(),
 }
 
 // TODO: load head / tail of file
+/// Read the first n blocks of an encrypted file. Due to the nature of counter block, we can
+/// decrypt any block of the encrypted file without decrypting the rest. This is used by the crate to grep over
+/// parts of encrypted files faster.
 pub fn read_first_n(path: &str, n: i32) -> Result<counter_block::Blocks, DecryptErr> {
     let mut f = File::open(path)?;
     let mut block_size_buff = [0u8; mem::size_of::<i32>()];
@@ -146,8 +149,46 @@ pub fn read_first_n(path: &str, n: i32) -> Result<counter_block::Blocks, Decrypt
     })
 }
 
+/// read the last n blocks of a file
+pub fn read_last_n(path: &str, n: i32) -> Result<(counter_block::Blocks, i64), DecryptErr> {
+    let mut f = File::open(path)?;
+    let mut block_size_buff = [0u8; mem::size_of::<i32>()];
+    let mut nonce_size_buff = [0u8; mem::size_of::<i32>()];
+    let mut rounds_num_buff = [0u8; mem::size_of::<i32>()];
+
+    f.read_exact(&mut block_size_buff)?;
+    f.read_exact(&mut nonce_size_buff)?;
+    f.read_exact(&mut rounds_num_buff)?;
+
+    let block_size: i32 = i32::from_le_bytes(block_size_buff);
+    let nonce_size: i32 = i32::from_le_bytes(nonce_size_buff);
+    let f_rounds: i32 = i32::from_le_bytes(rounds_num_buff);
+    let start_of_blocks = (3 * mem::size_of::<i32>()) as u64 + nonce_size as u64;
+    let len = n as usize * block_size as usize;
+    let file_size = f.metadata().unwrap().len();
+    let mut nonce = vec![0u8; nonce_size as usize];
+    f.read_exact(&mut nonce)?;
+
+    let start = max(start_of_blocks, file_size - len as u64);
+    let block_num = (start - start_of_blocks) as i64 / block_size as i64;
+    let blocks_vec: Vec<u8> = read_from_to(&mut f, start, len)?;
+    let blocks: Vec<Vec<u8>> = blocks_vec
+        .chunks_exact(block_size as usize)
+        .map(|x| x.to_vec())
+        .collect();
+    Ok((
+        counter_block::Blocks {
+            nonce,
+            f_rounds,
+            blocks,
+        },
+        block_num,
+    ))
+}
+
+/// Read a number of bytes from the middle of a file.
 pub fn read_from_to(f: &mut File, from: u64, len: usize) -> std::io::Result<Vec<u8>> {
-    assert!(f.metadata().unwrap().len() > from + len as u64);
+    assert!(f.metadata().unwrap().len() >= from + len as u64);
 
     let mut buff: Vec<u8> = vec![0u8; len];
     f.seek(SeekFrom::Start(from))?;
@@ -155,8 +196,7 @@ pub fn read_from_to(f: &mut File, from: u64, len: usize) -> std::io::Result<Vec<
     Ok(buff)
 }
 
-// TODO: batch / directory reads and writes
-
+/// Expands a path with glob notation to a vector of file paths.
 pub fn list_glob(
     path: &str,
     options: MatchOptions,

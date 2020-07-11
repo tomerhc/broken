@@ -1,3 +1,17 @@
+use common::error::ArgErr;
+
+#[derive(Debug)]
+/// holds the parsed arguments. it is passed to the main function to determine the proper action.
+/// some of the varients old a string with a prarmeter given with the argument (eg. -f
+/// /path/to/file).
+pub enum Args {
+    Key(String),
+    Encrypt(String),
+    Decrypt(String),
+    Head,
+    Tail,
+}
+
 ///parse the vector of arguments passed from main into a vector of tuples that look like:
 /// (<type of argument>, <value>)
 ///
@@ -12,17 +26,6 @@
 /// - a double argument
 /// - unrecognized argument
 /// and then returns an Err(()), which will cause main to exit.
-use common::error::ArgErr;
-
-#[derive(Debug)]
-pub enum Args {
-    Key(String),
-    Encrypt(String),
-    Decrypt(String),
-    Head,
-    Tail,
-}
-
 pub fn parse_args(mut argv: Vec<String>) -> Result<Vec<Args>, ArgErr> {
     //TODO: implement Args enum, write exapmle code in doc and deal with incorect number of
     //arguments
@@ -65,6 +68,8 @@ pub fn parse_args(mut argv: Vec<String>) -> Result<Vec<Args>, ArgErr> {
     Ok(final_args)
 }
 
+/// validate that the correct number of arguments was given, and that no more then one argument of
+/// each kind is present.
 fn validate_input(v: &[Args]) -> Result<(), ArgErr> {
     let mut enc: u8 = 0;
     let mut dec: u8 = 0;
@@ -80,7 +85,6 @@ fn validate_input(v: &[Args]) -> Result<(), ArgErr> {
             Args::Tail => tail += 1,
         }
     }
-    println!("{:?}", v);
     if (enc + dec) != 1 {
         print_usege();
         return Err(ArgErr::ArgMismatch);
@@ -94,6 +98,7 @@ fn validate_input(v: &[Args]) -> Result<(), ArgErr> {
     Ok(())
 }
 
+/// prints the usege message
 fn print_usege() {
     println!(
         "usege:
